@@ -1,0 +1,72 @@
+{
+  "name": "vscode-line-select-quad",
+  "displayName": "Line Select: (Up/Down)",
+  "description": "Four line-wise selection commands allowing to expand and shrink line selection upwards or downwards.",
+  "version": "1.0.1",
+  "publisher": "Sammy",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:lineSelect.outwardsUp",
+    "onCommand:lineSelect.inwardsUp",
+    "onCommand:lineSelect.outwardsDown",
+    "onCommand:lineSelect.inwardsDown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "lineSelect.outwardsUp",
+        "title": "Line Select: Expand Selection - One Line Up"
+      },
+      {
+        "command": "lineSelect.inwardsUp",
+        "title": "Line Select: Shrink Selection - One Line From Top"
+      },
+      {
+        "command": "lineSelect.outwardsDown",
+        "title": "Line Select: Expand Selection - One Line Down"
+      },
+      {
+        "command": "lineSelect.inwardsDown",
+        "title": "Line Select: Shrink Selection - One Line From Bottom"
+      }
+    ],
+    "keybindings": [
+        {
+           "key": "ctrl+shift+up", 
+          "command": "lineSelect.outwardsUp", 
+          "when": "editorTextFocus" 
+        },
+        {
+           "key": "ctrl+alt+shift+up", 
+          "command": "lineSelect.inwardsUp", 
+          "when": "editorTextFocus" 
+        },
+        {
+           "key": "ctrl+shift+down", 
+           "command": "lineSelect.outwardsDown", 
+           "when": "editorTextFocus" 
+          },
+        { 
+          "key": "ctrl+alt+shift+down", 
+          "command": "lineSelect.inwardsDown", 
+          "when": "editorTextFocus" 
+        }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "package": "@vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.6.0",
+    "typescript": "^5.9.2"
+  }
+}
