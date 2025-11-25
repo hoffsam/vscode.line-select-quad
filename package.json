@@ -2,7 +2,7 @@
   "name": "vscode-line-select-quad",
   "displayName": "Line Select: (Up/Down)",
   "description": "Four line-wise selection commands allowing to expand and shrink line selection upwards or downwards.",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "publisher": "Sammy",
   "engines": {
     "vscode": "^1.85.0"
@@ -37,36 +37,42 @@
       }
     ],
     "keybindings": [
-        {
-           "key": "ctrl+shift+up", 
-          "command": "lineSelect.outwardsUp", 
-          "when": "editorTextFocus" 
-        },
-        {
-           "key": "ctrl+alt+shift+up", 
-          "command": "lineSelect.inwardsUp", 
-          "when": "editorTextFocus" 
-        },
-        {
-           "key": "ctrl+shift+down", 
-           "command": "lineSelect.outwardsDown", 
-           "when": "editorTextFocus" 
-          },
-        { 
-          "key": "ctrl+alt+shift+down", 
-          "command": "lineSelect.inwardsDown", 
-          "when": "editorTextFocus" 
-        }
+      {
+        "key": "ctrl+shift+up",
+        "command": "lineSelect.outwardsUp",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+alt+shift+up",
+        "command": "lineSelect.inwardsUp",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+shift+down",
+        "command": "lineSelect.outwardsDown",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+alt+shift+down",
+        "command": "lineSelect.inwardsDown",
+        "when": "editorTextFocus"
+      }
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run esbuild-prod",
     "build": "tsc -p .",
     "watch": "tsc -w -p .",
-    "package": "@vscode/vsce package"
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "esbuild-prod": "npm run esbuild-base -- --minify",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.27.0",
     "typescript": "^5.9.2"
   }
 }

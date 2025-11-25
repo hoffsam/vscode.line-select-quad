@@ -34,23 +34,62 @@ function posEndForExclusiveLine(
 }
 
 /**
+ * Determines if the selection contains any partial line selections.
+ * Returns true if any part of the selection is partial (not full lines).
+ */
+function hasPartialLineSelection(sel: vscode.Selection, doc: vscode.TextDocument): boolean {
+  if (sel.isEmpty) {
+    return false; // Empty selection is treated as cursor, not partial
+  }
+  
+  const pMin = sel.start.isBefore(sel.end) ? sel.start : sel.end;
+  const pMax = sel.start.isBefore(sel.end) ? sel.end : sel.start;
+  
+  // If selection doesn't start at column 0, it's partial
+  if (pMin.character !== 0) {
+    return true;
+  }
+  
+  // If single line selection, check if it goes to the end of the line
+  if (pMin.line === pMax.line) {
+    const lineText = doc.lineAt(pMin.line).text;
+    // If selection ends before the end of the line content, it's partial
+    return pMax.character < lineText.length;
+  }
+  
+  // Multi-line selection: check if it ends at column 0 (full line selection)
+  // If it doesn't end at column 0, the last line is partially selected
+  return pMax.character !== 0;
+}
+
+/**
  * Snap current selection to whole-line bounds.
  * Returns [topInclusiveLine, bottomExclusiveLine].
- * If caret only, becomes [L, L+1].
+ * If caret only, becomes [L, L+1] where L is the active line.
+ * If ANY partial selection anywhere, select ALL affected lines completely.
+ * If full line selection, returns the actual line range for expansion/contraction.
  */
 function fullLineRange(sel: vscode.Selection, doc: vscode.TextDocument): [number, number] {
   if (sel.isEmpty) {
     const L = sel.active.line;
     return [L, Math.min(L + 1, doc.lineCount)];
   }
+  
   const pMin = sel.start.isBefore(sel.end) ? sel.start : sel.end;
   const pMax = sel.start.isBefore(sel.end) ? sel.end : sel.start;
-
+  
+  // If any part of the selection is partial, select all affected lines completely
+  if (hasPartialLineSelection(sel, doc)) {
+    const topLine = pMin.line;
+    const bottomLine = pMax.line;
+    // If selection ends at column 0, it means the line above is the last selected line
+    const actualBottomLine = pMax.character === 0 ? bottomLine - 1 : bottomLine;
+    return [topLine, actualBottomLine + 1];
+  }
+  
+  // Full line selection - return the actual range for normal expansion/contraction
   const top = pMin.line;
-  // If the later position is exactly at column 0, it doesn't include that line.
-  const bottomExclusive = pMax.character === 0 ? pMax.line : Math.min(pMax.line + 1, doc.lineCount);
-  // Ensure at least one line
-  if (bottomExclusive <= top) return [top, Math.min(top + 1, doc.lineCount)];
+  const bottomExclusive = pMax.line;
   return [top, bottomExclusive];
 }
 
@@ -87,6 +126,15 @@ function outwardsDown(editor: vscode.TextEditor) {
       const L = sel.active.line;
       return buildSelection(doc, L, L + 1, /*anchorAtEnd*/ false);
     }
+    
+    // Check if current selection has partial lines
+    if (hasPartialLineSelection(sel, doc)) {
+      // Convert partial selection to full line selection without expanding
+      let [top, botEx] = fullLineRange(sel, doc);
+      return buildSelection(doc, top, botEx, /*anchorAtEnd*/ false);
+    }
+    
+    // Full line selection - normal expansion
     let [top, botEx] = fullLineRange(sel, doc);
     if (botEx < doc.lineCount) botEx += 1;
     return buildSelection(doc, top, botEx, /*anchorAtEnd*/ false);
@@ -97,6 +145,14 @@ function outwardsDown(editor: vscode.TextEditor) {
 function inwardsDown(editor: vscode.TextEditor) {
   const doc = editor.document;
   editor.selections = editor.selections.map(sel => {
+    // Check if current selection has partial lines
+    if (hasPartialLineSelection(sel, doc)) {
+      // Convert partial selection to full line selection without shrinking
+      let [top, botEx] = fullLineRange(sel, doc);
+      return buildSelection(doc, top, botEx, /*anchorAtEnd*/ false);
+    }
+    
+    // Full line selection - normal shrinking
     let [top, botEx] = fullLineRange(sel, doc);
     const size = botEx - top;
     if (size <= 1) {
@@ -119,6 +175,15 @@ function outwardsUp(editor: vscode.TextEditor) {
       const L = sel.active.line;
       return buildSelection(doc, L, L + 1, /*anchorAtEnd*/ true);
     }
+    
+    // Check if current selection has partial lines
+    if (hasPartialLineSelection(sel, doc)) {
+      // Convert partial selection to full line selection without expanding
+      let [top, botEx] = fullLineRange(sel, doc);
+      return buildSelection(doc, top, botEx, /*anchorAtEnd*/ true);
+    }
+    
+    // Full line selection - normal expansion
     let [top, botEx] = fullLineRange(sel, doc);
     if (top > 0) top -= 1;
     // anchor at exclusive end so bottom stays pinned
@@ -130,6 +195,14 @@ function outwardsUp(editor: vscode.TextEditor) {
 function inwardsUp(editor: vscode.TextEditor) {
   const doc = editor.document;
   editor.selections = editor.selections.map(sel => {
+    // Check if current selection has partial lines
+    if (hasPartialLineSelection(sel, doc)) {
+      // Convert partial selection to full line selection without shrinking
+      let [top, botEx] = fullLineRange(sel, doc);
+      return buildSelection(doc, top, botEx, /*anchorAtEnd*/ true);
+    }
+    
+    // Full line selection - normal shrinking
     let [top, botEx] = fullLineRange(sel, doc);
     const size = botEx - top;
     if (size <= 1) {
